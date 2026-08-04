@@ -1,0 +1,26 @@
+Roadmap:
+1. File transmission over a network to another device, use the local host first and then try to experiment
+with another computer as long as you're connected to the same network -> Try to simulate Apple AirDrop, sending
+a file over a network to your phone/tablet
+    Step 1: Create the Github Repo for the File Transmission Project, come up with a name and a summary of what the
+    proejct is going to try to achieve
+    Step 2: Create a base-level TCP server; No need to create a client for now, we'll just net into it. We'll
+    bind it to our literal IP address
+    Step 3: Bytes decoding/Understanding how pdf's work programatically -> Play around with fopen,
+    fread, ftell, etcetra
+    Step 4: Work on some add-ons, i.e. the idea of airdropping or some of these ideas below that GPT was able to
+    generate
+
+
+
+TCP stream behavior (not assuming one send equals one recv)
+framing messages
+handling partial reads/writes
+large files
+multiple clients
+connection failures
+resumable transfers
+progress reporting
+integrity verification (making sure the received file is identical)
+portability between Linux and Windows
+performance measurements
