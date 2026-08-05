@@ -7,12 +7,24 @@
 #include <sys/select.h>
 
 /*
-    Can print out some information about our host that we may want to use in the future.
-    i.e., it's ip address
+    Need to create a sequence diagram to draw out how we're going to communicate with the remote
+    host/more system design concepts of this kind of communication.
+    1. Client is going to need to request to load a specific text, and then save it and its contents
+    back to the server
+    2. Multiple clients can edit a pdf and save the contents to the server -> No concurrency yet!
 
-    Can pass in the host ip address into the getaddrinfo() to generate us socket addresses
-    that we are going to eventually try to bind to in socket() and bind()
- */
+    A user is going to connect to the server. The server sends a message asking the client which
+    text_
+
+    1. Client connects to the server. We can use ncurses to create a descriptive terminal UI (Just to make the
+    C project cleaner)
+    2. Client can ask for three commands:
+        a.) create name_file.txt
+        b.) edit name_file.txt
+        c.) save name_file.txt
+    3. Server is going to run selector class to cycle through the create, edit, or save options. Server creates
+    a fork for each .txt file.
+*/
 
 typedef struct addrinfo addrinfo;
 typedef struct sockaddr sockaddr;
@@ -58,12 +70,36 @@ int main(int argc, char* argv[]) {
     VERIFY_RSLT_RTRN(res, "listen");
 
     fd_set master; fd_set master_modif;
+    FD_ZERO(&master); FD_ZERO(&master_modif);
     FD_SET(listen_sock, &master); FD_SET(stdin, &master);
 
     int max_sock = listen_sock;
+    int ext = 0;
 
-    int exit = 0;
-    while (exit == 0) {
-        int select = select(max_sock + 1, );
+    sockaddr_storage temp_sock_addr;
+    socklen_t socklen_storage = sizeof(temp_sock_addr);
+
+    while (ext == 0) {
+        master_modif = master;
+        int num_socks = select(max_sock + 1, &master_modif, NULL, NULL, NULL);
+
+        if (FD_ISSET(listen_sock, &master_modif)) {
+            int new_sock = accept(listen_sock, (sockaddr*) &temp_sock_addr, &socklen_storage);
+
+            char remote_name_addr[64];
+            res = getnameinfo((sockaddr*) &temp_sock_addr, socklen_storage, remote_name_addr, sizeof(remote_name_addr), 0, 0, 0);
+            VERIFY_RSLT(res, "getnameinfo after client socket has been accepted");
+            FD_SET(new_sock, &master);
+
+            printf("New address accepted by Server - %.*s", (int) sizeof(remote_name_addr), remote_name_addr);
+        }
+
+        if (num_socks > 0) {
+            for (int sock_iter = listen_sock + 1; sock_iter < max_sock + 1; sock_iter++) {
+                if (FD_ISSET(sock_iter, &master_modif)) {
+
+                }
+            }
+        }
     }
 }
