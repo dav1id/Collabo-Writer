@@ -46,6 +46,10 @@ typedef struct sockaddr_storage sockaddr_storage;
 #define AI_FAMILY AF_INET
 #define AI_SOCKTYPE SOCK_STREAM
 
+
+//Segmentation
+#define SEGMENT_LEN 1024
+
 int decode_user_selection(char* user_selection);
 int transmit_user_selection();
 
@@ -79,6 +83,8 @@ int main(int argc, char* argv[]) {
     sockaddr_storage temp_sock_addr;
     socklen_t socklen_storage = sizeof(temp_sock_addr);
 
+    char request[SEGMENT_LEN];
+
     while (ext == 0) {
         master_modif = master;
         int num_socks = select(max_sock + 1, &master_modif, NULL, NULL, NULL);
@@ -97,6 +103,29 @@ int main(int argc, char* argv[]) {
         if (num_socks > 0) {
             for (int sock_iter = listen_sock + 1; sock_iter < max_sock + 1; sock_iter++) {
                 if (FD_ISSET(sock_iter, &master_modif)) {
+                    /*
+                        Call recvfrom() to know that the client is not currently occupied
+                     */
+                    recv(sock_iter, request, SEGMENT_LEN, 0);
+
+                    // strcmp to make sure that we are calling recv only on create, before we delegate the recv to the fork we created
+                    char concat_command[6];
+
+                    for (int i = 0; i < 6; ++i)
+                       concat_command[i] = request[i];
+
+                    if (strcmp(concat_command, "create") != 0 ) {
+                        /*
+                            Each socket is going to communicate with the doc using a child process we call with fork.
+                            In case the socket was not removed from the master FD_SET and assigned to a seperate fork
+                            that is going to handle this sockets recvfrom.
+                         */
+                        char* response = "Unable to receive your request to create a document - Please try again";
+                        send(sock_iter, response, strlen(response), 0);
+
+                        FD_CLR(sock_iter, &master);
+                    }
+
 
                 }
             }
