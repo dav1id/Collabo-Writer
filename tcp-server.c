@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include <sys/select.h>
+#include <unistd.h>
 
 /*
     Need to create a sequence diagram to draw out how we're going to communicate with the remote
@@ -50,8 +51,43 @@ typedef struct sockaddr_storage sockaddr_storage;
 //Segmentation
 #define SEGMENT_LEN 1024
 
-int decode_user_selection(char* user_selection);
-int transmit_user_selection();
+struct DocumentFork DocumentFork {
+    int docID;
+    const char* docName;
+    pid_t pid;
+
+    struct Document document{};
+    struct DocumentFork *next;
+};
+
+struct Document {
+        fd_set master; // Sockets that have been
+};
+
+typedef struct DocumentFork DocumentFork;
+typedef struct Document Document;
+
+/**
+    Create the fork that is going to handle all the recvfroms from the different remote sockets connected
+    to it. Creates document_fork and Document structs for book-keeping. Inside the fork() it's going
+    to loop through its selector() and handle the recvfroms + conflicts when remote sockets call
+    updte name.txt
+**/
+void* initForkCreation(const int doc_id, const char* doc_name) {
+    pid_t pid = fork();
+    DocumentFork *document_fork = malloc(sizeof(document_fork));
+
+    document_fork->docID = doc_id;
+    document_fork->docName = doc_name;
+    document_fork->pid = pid;
+
+    fd_set doc_editor_set;
+
+    Document currDocument = document_fork->document;
+
+
+    return document_fork;
+}
 
 int main(int argc, char* argv[]) {
     addrinfo *hints;
@@ -117,16 +153,19 @@ int main(int argc, char* argv[]) {
                     if (strcmp(concat_command, "create") != 0 ) {
                         /*
                             Each socket is going to communicate with the doc using a child process we call with fork.
-                            In case the socket was not removed from the master FD_SET and assigned to a seperate fork
-                            that is going to handle this sockets recvfrom.
-                         */
-                        char* response = "Unable to receive your request to create a document - Please try again";
-                        send(sock_iter, response, strlen(response), 0);
+                            In case the socket was not removed from the master FD_SET and assigned to a seperate fork.
 
-                        FD_CLR(sock_iter, &master);
+                            Check if .txt file doesn't already exist on our own end
+                         */
+
+                        char* response = "Unable to receive your request as a seperate process for your document has not been created";
+                        send(sock_iter, response, strlen(response), 0);
+                        continue;
+
                     }
 
-
+                    initForkCreation();
+                    FD_CLR(sock_iter, &master);
                 }
             }
         }
