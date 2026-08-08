@@ -94,7 +94,7 @@ void* initForkCreation(int strt_sock_fd, const int doc_id, const char* doc_name)
     timeout.tv_sec = TIMEOUT_SECS;
     timeout.tv_usec = TIMEOUT_USECS;
 
-    char response[SEGMENT_LEN];
+    char response[64];
     char request[SEGMENT_LEN];
 
     while (sizeof(master) != 0) {
@@ -109,20 +109,42 @@ void* initForkCreation(int strt_sock_fd, const int doc_id, const char* doc_name)
             for (int sock = 0; sock < (max+1); ++sock) {
                 int bytes_recv = (int) recv(sock, request, SEGMENT_LEN, 0);
 
-                char* cmp;
-                snprintf(cmp, sizeof(cmp), "update %s", doc_name);
-                memcpy(command, request, strlen("update "));
+                char comp_one[64];
+                snprintf(comp_one, sizeof(comp_one), "update %s", doc_name);
+                char* comp_two  = &request[strlen(comp_one)];
 
-                // char *stringTwo = &string[6]; -> printing just stringTwo gives entire string
-                
-                if (strcmp(&response[strlen(cmp)], "update") == 0) {
-                    // Update the document - Probably by telling the client that it's ready to receive the bytes
-
+                /*
+                    The user wants to update the document. Here we're going to send a message to the client
+                    saying that we're ready to receive the segment portions of the PDF.
+                    We're going to block the select() until the Client is able to send us this info
+                 */
+                if (strcmp(comp_one, comp_two) == 0) {
+                    continue;
                 }
 
-                if (strcmp(&response[strlen(cmp)], "create") == 0) {
-                    // Need to communicate to switch documents! Later update, one document for now!
+                /*
+                    The user wants to switch to some other document where they will call update .txt from.
+                    We'll come back to this after we deal with one document. But it's going to delegate
+                    some command to the server
+                */
+                comp_two = &request[strlen("switch")];
+                if (strcmp(comp_two, "switch") == 0) {
+                    continue;
                 }
+
+                /*
+                    The user wants to create a new document. We'll have to tell the user to use the
+                    switch doc_name to switch to a different document
+                 */
+                comp_two = &request[strlen("create")];
+                if (strcmp(comp_two, "create") == 0) {
+                    continue;
+                }
+
+                response[64] = "Unable to process user command...";
+
+
+                // char *stringTwo = &string[6]; -> printing just stringTwo gives entire string - Points to char 7, keeps reading until it reaches the escape character
             }
         }
     }

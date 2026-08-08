@@ -1,10 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 int main() {
-    char string[1024] = "update"; // create is 2 bytes
-    printf("%d\n", (int) strlen("update"));
-    printf("%c\n", string[5]);
-    printf("%d\n", (int) strlen("create"));
-
-
+	char string_one[64];
+	string_one = "Hello, World!";
+	printf("%s\n", string_one);
 }
