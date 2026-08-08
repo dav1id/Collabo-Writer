@@ -85,65 +85,120 @@ void initForkCreation(DocumentFork *document_fork, int start_sock, const char* d
     doc->master_set = master;
 
     struct timeval timeout;
-    timeout.tv_sec = TIMEOUT_SECS;
-    timeout.tv_usec = TIMEOUT_USECS;
+    timeout.tv_sec = TIMEOUT_SECS; timeout.tv_usec = TIMEOUT_USECS;
 
-    char response[64];
-    char request[SEGMENT_LEN];
+    if (pid > 0) {
+        char response[64];
+        char request[SEGMENT_LEN];
 
-    while (sizeof(master) != 0) {
-        int socks_ready = select(max, &master, NULL, NULL, &timeout);
+        while (sizeof(master) != 0) {
+            int socks_ready = select(max, &master, NULL, NULL, &timeout);
 
-        if (socks_ready != 0) {
-            /*
-                Assume that next message user sends is going to include in the document in segments,
-                which we're going to handle on the client side then go and handle on the server side!
-            */
-
-            for (int sock = 0; sock < (max+1); ++sock) {
-                int bytes_recv = (int) recv(sock, request, SEGMENT_LEN, 0);
-
-                char comp_one[64];
-                snprintf(comp_one, sizeof(comp_one), "update %s", doc_name);
-                char* comp_two  = &request[strlen(comp_one)];
-
+            if (socks_ready != 0) {
                 /*
-                    The user wants to update the document. Here we're going to send a message to the client
-                    saying that we're ready to receive the segment portions of the text
-                    We're going to block the select() until the Client is able to send us this info
-                 */
-                if (strcmp(comp_one, comp_two) == 0) {
-                    continue;
-                }
-
-                /*
-                    The user wants to switch to some other document where they will call update .txt from.
-                    We'll come back to this after we deal with one document. But it's going to delegate
-                    some command to the server
+                    Assume that next message user sends is going to include in the document in segments,
+                    which we're going to handle on the client side then go and handle on the server side!
                 */
-                memcpy(comp_two, );
-                if (strcmp(comp_two, "switch") == 0) {
-                    continue;
+
+                for (int sock = 0; sock < (max+1); ++sock) {
+                    int bytes_recv = (int) recv(sock, request, SEGMENT_LEN, 0); // for debugging bookeeping
+
+                    char comp_one[64];
+                    snprintf(comp_one, sizeof(comp_one), "update %s", doc_name);
+                    char* comp_two  = &request[strlen(comp_one)];
+
+                    /*
+                        The user wants to update the document. Here we're going to send a message to the client
+                        saying that we're ready to receive the segment portions of the text
+                        We're going to block the select() until the Client is able to send us this info
+                     */
+                    if (strcmp(comp_one, comp_two) == 0) {
+                        continue;
+                    }
+
+                    /*
+                        The user wants to switch to some other document where they will call update .txt from.
+                        We'll come back to this after we deal with one document. But it's going to delegate
+                        some command to the server
+                    */
+                    memcpy(comp_two, request, sizeof("switch"));
+                    if (strcmp(comp_two, "switch") == 0) {
+                        continue;
+                    }
+
+                    /*
+                        The user wants to create a new document. We'll have to tell the user to use the
+                        switch doc_name to switch to a different document
+                     */
+                    memcpy(comp_two, request, sizeof("create"));
+                    if (strcmp(comp_two, "create") == 0) {
+                        continue;
+                    }
+
+                    response[64] = "Unable to process user command...";
+                    send(sock, response, sizeof(response), 0);
                 }
+            }
+        }
 
-                /*
-                    The user wants to create a new document. We'll have to tell the user to use the
-                    switch doc_name to switch to a different document
-                 */
-                comp_two = &request[strlen("create")];
-                if (strcmp(comp_two, "create") == 0) {
-                    continue;
+        free(document_fork->document); free(document_fork);
+    }
+}
+
+void master_selector(int listen_sock) {
+    fd_set master; fd_set master_modif;
+    FD_ZERO(&master); FD_ZERO(&master_modif);
+    FD_SET(listen_sock, &master); FD_SET(0, &master); // add std_in
+
+    int max_sock = listen_sock;
+
+    sockaddr_storage temp_sock_addr;
+    socklen_t socklen_storage = sizeof(temp_sock_addr);
+
+    char request[SEGMENT_LEN]; char response[SEGMENT_LEN];
+
+    while (1) {
+        master_modif = master;
+        int num_socks = select(max_sock + 1, &master_modif, NULL, NULL, NULL);
+
+        if (FD_ISSET(listen_sock, &master_modif)) {
+            int new_sock = accept(listen_sock, (sockaddr*) &temp_sock_addr, &socklen_storage);
+
+            char remote_name_addr[64];
+            int res = getnameinfo((sockaddr*) &temp_sock_addr, socklen_storage, remote_name_addr, sizeof(remote_name_addr), 0, 0, 0);
+            VERIFY_RSLT(res, "getnameinfo after client socket has been accepted");
+            FD_SET(new_sock, &master);
+
+            printf("New address accepted by Server - %.*s", (int) sizeof(remote_name_addr), remote_name_addr);
+        }
+
+        if (num_socks > 0) {
+            for (int sock = listen_sock + 1; sock < max_sock + 1; sock++) {
+                if (FD_ISSET(sock, &master_modif)) {
+
+                    recv(sock, request, SEGMENT_LEN, 0);
+                    char cmp_one[64] = "create";
+                    char* cmp_two = &request[strlen(cmp_one)];
+
+                    /*
+                         If the user is trying to create a document that has not already been created.
+                         Need to make a way to check if the document has been created later
+                     */
+                    if (strcmp(cmp_one, cmp_two) == 0) {
+                        DocumentFork *document_fork = malloc(sizeof(DocumentFork));
+                        char* doc_name = &request[sizeof("create")];
+
+                        initForkCreation(document_fork, sock, doc_name);
+                        FD_CLR(sock, &master);
+                        continue;
+                    }
+
+                    response[SEGMENT_LEN] = "Unable to receive your request as a seperate process for your document has not been created";
+                    send(sock, response, strlen(response), 0);
                 }
-
-                response[64] = "Unable to process user command...";
-                send(sock, response, sizeof(response), 0);
-
-                // char *stringTwo = &string[6]; -> printing just stringTwo gives entire string - Points to char 7, keeps reading until it reaches the escape character
             }
         }
     }
-
-    free(document_fork->document); free(document_fork);
 }
 
 int main(int argc, char* argv[]) {
@@ -166,63 +221,7 @@ int main(int argc, char* argv[]) {
     res = listen(listen_sock, 2);
     VERIFY_RSLT_RTRN(res, "listen");
 
-    fd_set master; fd_set master_modif;
-    FD_ZERO(&master); FD_ZERO(&master_modif);
-    FD_SET(listen_sock, &master); FD_SET(stdin, &master);
+    master_selector(listen_sock);
 
-    int max_sock = listen_sock;
-    int ext = 0;
-
-    sockaddr_storage temp_sock_addr;
-    socklen_t socklen_storage = sizeof(temp_sock_addr);
-
-    char request[SEGMENT_LEN];
-    char response[SEGMENT_LEN];
-
-    while (ext == 0) {
-        master_modif = master;
-        int num_socks = select(max_sock + 1, &master_modif, NULL, NULL, NULL);
-
-        if (FD_ISSET(listen_sock, &master_modif)) {
-            int new_sock = accept(listen_sock, (sockaddr*) &temp_sock_addr, &socklen_storage);
-
-            char remote_name_addr[64];
-            res = getnameinfo((sockaddr*) &temp_sock_addr, socklen_storage, remote_name_addr, sizeof(remote_name_addr), 0, 0, 0);
-            VERIFY_RSLT(res, "getnameinfo after client socket has been accepted");
-            FD_SET(new_sock, &master);
-
-            printf("New address accepted by Server - %.*s", (int) sizeof(remote_name_addr), remote_name_addr);
-        }
-
-        if (num_socks > 0) {
-            for (int sock = listen_sock + 1; sock < max_sock + 1; sock++) {
-                if (FD_ISSET(sock, &master_modif)) {
-
-                    recv(sock, request, SEGMENT_LEN, 0);
-                    char cmp_one[64] = "create";
-                    char* cmp_two = &request[strlen(cmp_one)];
-
-                    /*
-                         If the user is trying to create a document that has not already been created.
-                         Need to make a way to check if the document has been created later
-                     */
-                    if (strcmp(cmp_one, cmp_two) == 0) {
-                        cmp_two = &request[strlen()];
-                        if () {
-
-                        }
-
-                        DocumentFork *document_fork = malloc(sizeof(DocumentFork));
-                        initForkCreation(document_fork, sock, "test");
-                        FD_CLR(sock, &master);
-                        continue;
-                    }
-
-                    response[SEGMENT_LEN] = "Unable to receive your request as a seperate process for your document has not been created";
-                    send(sock, response, strlen(response), 0);
-                    }
-                }
-            }
-        }
-    }
+    return 1;
 }

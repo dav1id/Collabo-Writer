@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <string.h>
-int main() {
-	char* comp_one = "Hello, World!";
-	comp_one = "Hello, World with a memory leak to spice it up!";
-	printf("%d\n", (int) sizeof(comp_one));
-	printf("%s\n", comp_one);
-}
 
+int main() {
+	char string_one[64] = "Hello World with a little memory leak!";
+	char string_two[64];
+	memcpy(string_two, string_one, 8); // why is it printing
+	printf("%*.s\n", (int) strlen(string_two), string_two);
+}
