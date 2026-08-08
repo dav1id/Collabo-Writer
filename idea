@@ -47,3 +47,22 @@ performance measurements
     3. Server is going to run selector class to cycle through the create, edit, or save options. Server creates
     a fork for each .txt file.
 */
+
+
+
+
+
+/*
+    User doesns't have to update the document if we're abl to send the segments that were updated in real time
+    Each x amount of bytes are sen over to the server with their own header and data. The header is going to include
+    the bytes that have been changed in the segment, and the starting pos and ending pos. If a user changes this specific segment
+    we send this protocol to the server, and the server updates the segment for everybody else.
+
+        1. We need to know when a user is making edits to the document. We can have a database of the ending byte value
+        of every segment, and if that changes in say 20 seconds, we know that we need to loop through and find the segments
+        that hae changed -> Any more efficient way to do this?
+
+    If the user updates bytes 5-8,
+
+
+*/

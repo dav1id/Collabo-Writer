@@ -36,7 +36,6 @@ typedef struct DocumentFork DocumentFork;
 typedef struct docinfo docinfo;
 
 struct DocumentFork DocumentFork {
-    int docID;
     const char* docName;
     pid_t pid;
 
@@ -50,28 +49,23 @@ struct docinfo {
 
 DocumentFork* doc_fork_head = NULL;
 
+/**
+
+**/
+void update_document();
 
 /**
     Create the fork that is going to handle all the recvfroms from the different remote sockets connected
-    to it. Creates document_fork and Document structs for book-keeping. Inside the fork() it's going
+    to it. Creates document_fork and Document structs for bookkeeping. Inside the fork() it's going
     to loop through its selector() and handle the recvfroms + conflicts when remote sockets call
     update name.txt
 
     The fork is created and the socket that created it is assigned to its fd_read_set.
     (insert_function_name) here tells it
 **/
-void* initForkCreation();
-
-/**
-
-**/
-void update_document();
-
-void* initForkCreation(int strt_sock_fd, const int doc_id, const char* doc_name) {
+void initForkCreation(DocumentFork *document_fork, int start_sock, const char* doc_name) {
     pid_t pid = fork();
-    DocumentFork *document_fork = malloc(sizeof(DocumentFork));
 
-    document_fork->docID = doc_id;
     document_fork->docName = doc_name;
     document_fork->pid = pid;
 
@@ -85,7 +79,7 @@ void* initForkCreation(int strt_sock_fd, const int doc_id, const char* doc_name)
     curr->next = document_fork;
 
     fd_set master;
-    int max = strt_sock_fd;
+    int max = start_sock;
 
     FD_ZERO(&master);
     doc->master_set = master;
@@ -102,9 +96,9 @@ void* initForkCreation(int strt_sock_fd, const int doc_id, const char* doc_name)
 
         if (socks_ready != 0) {
             /*
-            Assume that next message user sends is going to include in the document in segments,
-            which we're going to handle on the client side then go and handle on the server side!
-         */
+                Assume that next message user sends is going to include in the document in segments,
+                which we're going to handle on the client side then go and handle on the server side!
+            */
 
             for (int sock = 0; sock < (max+1); ++sock) {
                 int bytes_recv = (int) recv(sock, request, SEGMENT_LEN, 0);
@@ -115,7 +109,7 @@ void* initForkCreation(int strt_sock_fd, const int doc_id, const char* doc_name)
 
                 /*
                     The user wants to update the document. Here we're going to send a message to the client
-                    saying that we're ready to receive the segment portions of the PDF.
+                    saying that we're ready to receive the segment portions of the text
                     We're going to block the select() until the Client is able to send us this info
                  */
                 if (strcmp(comp_one, comp_two) == 0) {
@@ -127,7 +121,7 @@ void* initForkCreation(int strt_sock_fd, const int doc_id, const char* doc_name)
                     We'll come back to this after we deal with one document. But it's going to delegate
                     some command to the server
                 */
-                comp_two = &request[strlen("switch")];
+                memcpy(comp_two, );
                 if (strcmp(comp_two, "switch") == 0) {
                     continue;
                 }
@@ -142,7 +136,7 @@ void* initForkCreation(int strt_sock_fd, const int doc_id, const char* doc_name)
                 }
 
                 response[64] = "Unable to process user command...";
-
+                send(sock, response, sizeof(response), 0);
 
                 // char *stringTwo = &string[6]; -> printing just stringTwo gives entire string - Points to char 7, keeps reading until it reaches the escape character
             }
@@ -150,7 +144,6 @@ void* initForkCreation(int strt_sock_fd, const int doc_id, const char* doc_name)
     }
 
     free(document_fork->document); free(document_fork);
-    return document_fork;
 }
 
 int main(int argc, char* argv[]) {
@@ -184,6 +177,7 @@ int main(int argc, char* argv[]) {
     socklen_t socklen_storage = sizeof(temp_sock_addr);
 
     char request[SEGMENT_LEN];
+    char response[SEGMENT_LEN];
 
     while (ext == 0) {
         master_modif = master;
@@ -201,35 +195,32 @@ int main(int argc, char* argv[]) {
         }
 
         if (num_socks > 0) {
-            for (int sock_iter = listen_sock + 1; sock_iter < max_sock + 1; sock_iter++) {
-                if (FD_ISSET(sock_iter, &master_modif)) {
+            for (int sock = listen_sock + 1; sock < max_sock + 1; sock++) {
+                if (FD_ISSET(sock, &master_modif)) {
+
+                    recv(sock, request, SEGMENT_LEN, 0);
+                    char cmp_one[64] = "create";
+                    char* cmp_two = &request[strlen(cmp_one)];
+
                     /*
-                        Call recvfrom() to know that the client is not currently occupied
+                         If the user is trying to create a document that has not already been created.
+                         Need to make a way to check if the document has been created later
                      */
-                    recv(sock_iter, request, SEGMENT_LEN, 0);
+                    if (strcmp(cmp_one, cmp_two) == 0) {
+                        cmp_two = &request[strlen()];
+                        if () {
 
-                    // strcmp to make sure that we are calling recv only on create, before we delegate the recv to the fork we created
-                    char concat_command[6];
+                        }
 
-                    for (int i = 0; i < 6; ++i)
-                       concat_command[i] = request[i];
-
-                    if (strcmp(concat_command, "create") != 0 ) {
-                        /*
-                            Each socket is going to communicate with the doc using a child process we call with fork.
-                            In case the socket was not removed from the master FD_SET and assigned to a seperate fork.
-
-                            Check if .txt file doesn't already exist on our own end
-                         */
-
-                        char* response = "Unable to receive your request as a seperate process for your document has not been created";
-                        send(sock_iter, response, strlen(response), 0);
+                        DocumentFork *document_fork = malloc(sizeof(DocumentFork));
+                        initForkCreation(document_fork, sock, "test");
+                        FD_CLR(sock, &master);
                         continue;
-
                     }
 
-                    initForkCreation();
-                    FD_CLR(sock_iter, &master);
+                    response[SEGMENT_LEN] = "Unable to receive your request as a seperate process for your document has not been created";
+                    send(sock, response, strlen(response), 0);
+                    }
                 }
             }
         }
