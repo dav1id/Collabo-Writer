@@ -7,26 +7,6 @@
 #include <sys/select.h>
 #include <unistd.h>
 
-/*
-    Need to create a sequence diagram to draw out how we're going to communicate with the remote
-    host/more system design concepts of this kind of communication.
-    1. Client is going to need to request to load a specific text, and then save it and its contents
-    back to the server
-    2. Multiple clients can edit a pdf and save the contents to the server -> No concurrency yet!
-
-    A user is going to connect to the server. The server sends a message asking the client which
-    text_
-
-    1. Client connects to the server. We can use ncurses to create a descriptive terminal UI (Just to make the
-    C project cleaner)
-    2. Client can ask for three commands:
-        a.) create name_file.txt
-        b.) edit name_file.txt
-        c.) save name_file.txt
-    3. Server is going to run selector class to cycle through the create, edit, or save options. Server creates
-    a fork for each .txt file.
-*/
-
 typedef struct addrinfo addrinfo;
 typedef struct sockaddr sockaddr;
 typedef struct sockaddr_storage sockaddr_storage;
@@ -47,45 +27,107 @@ typedef struct sockaddr_storage sockaddr_storage;
 #define AI_FAMILY AF_INET
 #define AI_SOCKTYPE SOCK_STREAM
 
-
 //Segmentation
 #define SEGMENT_LEN 1024
+#define TIMEOUT_SECS 7
+#define TIMEOUT_USECS 0
+
+typedef struct DocumentFork DocumentFork;
+typedef struct docinfo docinfo;
 
 struct DocumentFork DocumentFork {
     int docID;
     const char* docName;
     pid_t pid;
 
-    struct Document document{};
-    struct DocumentFork *next;
+    docinfo *document;
+    DocumentFork *next;
 };
 
-struct Document {
-        fd_set master; // Sockets that have been
+struct docinfo {
+    fd_set master_set; // Sockets that have been
 };
 
-typedef struct DocumentFork DocumentFork;
-typedef struct Document Document;
+DocumentFork* doc_fork_head = NULL;
+
 
 /**
     Create the fork that is going to handle all the recvfroms from the different remote sockets connected
     to it. Creates document_fork and Document structs for book-keeping. Inside the fork() it's going
     to loop through its selector() and handle the recvfroms + conflicts when remote sockets call
-    updte name.txt
+    update name.txt
+
+    The fork is created and the socket that created it is assigned to its fd_read_set.
+    (insert_function_name) here tells it
 **/
-void* initForkCreation(const int doc_id, const char* doc_name) {
+void* initForkCreation();
+
+/**
+
+**/
+void update_document();
+
+void* initForkCreation(int strt_sock_fd, const int doc_id, const char* doc_name) {
     pid_t pid = fork();
-    DocumentFork *document_fork = malloc(sizeof(document_fork));
+    DocumentFork *document_fork = malloc(sizeof(DocumentFork));
 
     document_fork->docID = doc_id;
     document_fork->docName = doc_name;
     document_fork->pid = pid;
 
-    fd_set doc_editor_set;
+    document_fork->document = malloc(sizeof(docinfo));
+    docinfo* doc = document_fork->document;
 
-    Document currDocument = document_fork->document;
+    DocumentFork *curr = doc_fork_head;
+    while (curr->next != NULL) {
+        curr = curr->next;
+    }
+    curr->next = document_fork;
 
+    fd_set master;
+    int max = strt_sock_fd;
 
+    FD_ZERO(&master);
+    doc->master_set = master;
+
+    struct timeval timeout;
+    timeout.tv_sec = TIMEOUT_SECS;
+    timeout.tv_usec = TIMEOUT_USECS;
+
+    char response[SEGMENT_LEN];
+    char request[SEGMENT_LEN];
+
+    while (sizeof(master) != 0) {
+        int socks_ready = select(max, &master, NULL, NULL, &timeout);
+
+        if (socks_ready != 0) {
+            /*
+            Assume that next message user sends is going to include in the document in segments,
+            which we're going to handle on the client side then go and handle on the server side!
+         */
+
+            for (int sock = 0; sock < (max+1); ++sock) {
+                int bytes_recv = (int) recv(sock, request, SEGMENT_LEN, 0);
+
+                char* cmp;
+                snprintf(cmp, sizeof(cmp), "update %s", doc_name);
+                memcpy(command, request, strlen("update "));
+
+                // char *stringTwo = &string[6]; -> printing just stringTwo gives entire string
+                
+                if (strcmp(&response[strlen(cmp)], "update") == 0) {
+                    // Update the document - Probably by telling the client that it's ready to receive the bytes
+
+                }
+
+                if (strcmp(&response[strlen(cmp)], "create") == 0) {
+                    // Need to communicate to switch documents! Later update, one document for now!
+                }
+            }
+        }
+    }
+
+    free(document_fork->document); free(document_fork);
     return document_fork;
 }
 

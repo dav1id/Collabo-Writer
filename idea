@@ -24,3 +24,26 @@ progress reporting
 integrity verification (making sure the received file is identical)
 portability between Linux and Windows
 performance measurements
+
+
+
+
+/*
+    Need to create a sequence diagram to draw out how we're going to communicate with the remote
+    host/more system design concepts of this kind of communication.
+    1. Client is going to need to request to load a specific text, and then save it and its contents
+    back to the server
+    2. Multiple clients can edit a pdf and save the contents to the server -> No concurrency yet!
+
+    A user is going to connect to the server. The server sends a message asking the client which
+    text_
+
+    1. Client connects to the server. We can use ncurses to create a descriptive terminal UI (Just to make the
+    C project cleaner)
+    2. Client can ask for three commands:
+        a.) create name_file.txt
+        b.) edit name_file.txt
+        c.) save name_file.txt
+    3. Server is going to run selector class to cycle through the create, edit, or save options. Server creates
+    a fork for each .txt file.
+*/
