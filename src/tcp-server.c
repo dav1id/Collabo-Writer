@@ -53,6 +53,22 @@ DocumentFork* doc_fork_head = NULL;
 void update_document();
 
 /**
+    Eventually going to be a part of the document header. This is going to append the contents of the remote
+    socket to the document. Follows an order of recieving/sending the segments from the user:
+
+    1. Receives metadata of the document (The number of segments for now)
+    2. Calls recv while incrementing the segments it has received from the user
+**/
+
+void append_from_recv(int sock, char* doc_name) {
+    char* request = NULL;
+    char response[SEGMENT_LEN];
+
+    recv(sock, request, strlen(request), 0);
+    int segment_tracker;
+}
+
+/**
     Create the fork that is going to handle all the recvfroms from the different remote sockets connected
     to it. Creates document_fork and Document structs for bookkeeping. Inside the fork() it's going
     to loop through its selector() and handle the recvfroms + conflicts when remote sockets call
@@ -133,6 +149,8 @@ void initForkCreation(DocumentFork *document_fork, int start_sock, const char* d
     }
 }
 
+
+
 void master_selector(int listen_sock) {
     fd_set master; fd_set master_modif;
     FD_ZERO(&master); FD_ZERO(&master_modif);
@@ -202,9 +220,14 @@ void master_selector(int listen_sock) {
                         }
 
                         /*
-                           Send a message saying we're ready to receive the contents,
+                           Send a message saying we're ready to receive the contents (A 1),
                            and then serialize it in our server
                         */
+
+                        response[SEGMENT_LEN] = "1 - Ready to receive contents";
+                        send(sock, response, strlen(response), 0);
+
+                        append_from_recv(sock, doc_name);
                     }
 
                     response[SEGMENT_LEN] = "Unable to receive your request as a separate process for your document has not been created";
