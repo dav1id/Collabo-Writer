@@ -36,7 +36,7 @@ typedef struct DocumentFork DocumentFork;
 typedef struct docinfo docinfo;
 
 struct DocumentFork DocumentFork {
-    const char* docName;
+    const char* doc_name;
     pid_t pid;
 
     docinfo *document;
@@ -49,9 +49,7 @@ struct docinfo {
 
 DocumentFork* doc_fork_head = NULL;
 
-/**
 
-**/
 void update_document();
 
 /**
@@ -66,7 +64,7 @@ void update_document();
 void initForkCreation(DocumentFork *document_fork, int start_sock, const char* doc_name) {
     pid_t pid = fork();
 
-    document_fork->docName = doc_name;
+    document_fork->doc_name = doc_name;
     document_fork->pid = pid;
 
     document_fork->document = malloc(sizeof(docinfo));
@@ -117,20 +115,10 @@ void initForkCreation(DocumentFork *document_fork, int start_sock, const char* d
                     }
 
                     /*
-                        The user wants to switch to some other document where they will call update .txt from.
-                        We'll come back to this after we deal with one document. But it's going to delegate
-                        some command to the server
-                    */
-                    memcpy(comp_two, request, sizeof("switch"));
-                    if (strcmp(comp_two, "switch") == 0) {
-                        continue;
-                    }
-
-                    /*
-                        The user wants to create a new document. We'll have to tell the user to use the
-                        switch doc_name to switch to a different document
+                        The user wants to connect to a new document. We'll have to tell the user to use the
+                        connect doc_name to switch to a different document
                      */
-                    memcpy(comp_two, request, sizeof("create"));
+                    memcpy(comp_two, request, sizeof("connect"));
                     if (strcmp(comp_two, "create") == 0) {
                         continue;
                     }
@@ -177,23 +165,49 @@ void master_selector(int listen_sock) {
                 if (FD_ISSET(sock, &master_modif)) {
 
                     recv(sock, request, SEGMENT_LEN, 0);
-                    char cmp_one[64] = "create";
+                    char cmp_one[64] = "connect";
                     char* cmp_two = &request[strlen(cmp_one)];
 
-                    /*
-                         If the user is trying to create a document that has not already been created.
-                         Need to make a way to check if the document has been created later
-                     */
-                    if (strcmp(cmp_one, cmp_two) == 0) {
-                        DocumentFork *document_fork = malloc(sizeof(DocumentFork));
-                        char* doc_name = &request[sizeof("create")];
 
-                        initForkCreation(document_fork, sock, doc_name);
-                        FD_CLR(sock, &master);
-                        continue;
+                    /*
+                        Connect() is going to connect the client to the document they want to begin to edit.
+                        We'll loop through our DocumentForks linked list (by the doc name) and create a process if
+                        a process to handle the document hasn't already been created. If it has, we'll have to add the
+                        client that wants to connect to the fd_read_set of the process. If it hasn't then we'll have
+                        to load the contents and then create the DocumentFork
+                    */
+
+                    if (strcmp(cmp_one, cmp_two) == 0) {
+                        char* doc_name = &request[sizeof("connect")];
+                        int found = 0;
+                        DocumentFork *curr = doc_fork_head;
+
+                        while (curr != NULL && curr->next != NULL) {
+                            if (curr->doc_name == doc_name) {
+                                found = 1;
+                                break;
+                            }
+                        }
+
+                        if (found == 0) {
+                            DocumentFork *document_fork = malloc(sizeof(DocumentFork));
+
+                            initForkCreation(document_fork, sock, doc_name);
+                            FD_CLR(sock, &master);
+
+                        } else {
+                            /*
+                                Communicate with the existing fork and add it to its selector
+                             */
+                        }
+
+                        /*
+                           Send a message saying we're ready to receive the contents,
+                           and then serialize it in our server
+                        */
                     }
 
-                    response[SEGMENT_LEN] = "Unable to receive your request as a seperate process for your document has not been created";
+                    response[SEGMENT_LEN] = "Unable to receive your request as a separate process for your document has not been created";
                     send(sock, response, strlen(response), 0);
                 }
             }
