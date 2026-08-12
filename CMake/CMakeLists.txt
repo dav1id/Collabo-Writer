@@ -3,5 +3,6 @@ project(FileDrop C)
 
 set(CMAKE_C_STANDARD 11)
 
-add_executable(tcp-server ../src/tcp-server.c)
+add_executable(tcp-server ../src/tcp-server.c
+        ../src/ncurses.c)
 
