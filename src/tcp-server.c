@@ -7,6 +7,10 @@
 #include <sys/select.h>
 #include <unistd.h>
 
+
+/*
+    Change sequence diagram - key words are connect, and then append
+ */
 typedef struct addrinfo addrinfo;
 typedef struct sockaddr sockaddr;
 typedef struct sockaddr_storage sockaddr_storage;
@@ -135,7 +139,7 @@ void initForkCreation(DocumentFork *document_fork, int start_sock, const char* d
                         connect doc_name to switch to a different document
                      */
                     memcpy(comp_two, request, sizeof("connect"));
-                    if (strcmp(comp_two, "create") == 0) {
+                    if (strcmp(comp_two, "connect") == 0) {
                         continue;
                     }
 
@@ -151,7 +155,7 @@ void initForkCreation(DocumentFork *document_fork, int start_sock, const char* d
 
 
 
-void master_selector(int listen_sock) {
+void master_selector(const int listen_sock) {
     fd_set master; fd_set master_modif;
     FD_ZERO(&master); FD_ZERO(&master_modif);
     FD_SET(listen_sock, &master); FD_SET(0, &master); // add std_in
