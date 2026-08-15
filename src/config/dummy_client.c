@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <errno.h>
+#include <string.h>
+
 /*
     File functions:
     1. fopen() - Creates a FILE struct and returns a pointer, or null if it wasn't able to find
@@ -15,20 +18,26 @@
     4. fread() - Reads from the file address listed in the FILE struct, and saves the bytes in the
     memory location listed by the user.
     5. fprintf() - Similar to printf, but allows the user to specify the destination
+    6. ftell() - Returns the current file position
 */
 
 int main() {
-    char* file_path = "../config_files/client_in.txt";
+    char* cwd = getcwd(NULL, 0);
+    printf("Working directory is: %s\n", cwd);
+    free(cwd);
+
+    char* file_path = "../../src/config/in.txt"; // path relative to cmake
     FILE* fp = fopen(file_path, "rb");
 
-    if (fopen(file_path, "rb") == NULL)
-        return 1;
+    if (fp == NULL) {
+        printf("Error Number %d: %s\n", errno, strerror(errno));
+        return -1;
+    }
 
     char buffer[SEGMENT_LEN];
     int program_counter = 1;
-    int final_addr = lseek();
 
-
-
-
+    fseek(fp, 0, SEEK_END);
+    long final_pos = ftell(fp);
+    printf("%d\n", (int) final_pos);
 }
