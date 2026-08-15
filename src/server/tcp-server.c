@@ -54,8 +54,6 @@ struct docinfo {
 DocumentFork* doc_fork_head = NULL;
 
 
-void update_document();
-
 /**
     Eventually going to be a part of the document header. This is going to append the contents of the remote
     socket to the document. Follows an order of recieving/sending the segments from the user:
@@ -152,7 +150,6 @@ void initForkCreation(DocumentFork *document_fork, int start_sock, const char* d
         free(document_fork->document); free(document_fork);
     }
 }
-
 
 
 void master_selector(const int listen_sock) {

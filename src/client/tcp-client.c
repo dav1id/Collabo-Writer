@@ -3,6 +3,7 @@
 #include <string.h>
 #include <netdb.h>
 #include <sys/select.h>
+#include "../../include/client_doc_writer.h"
 
 #define VERIFY_RSLT_RTRN(){\
     \
@@ -16,18 +17,6 @@
 #define AI_FAMILY AF_INET
 #define AI_SOCKTYPE SOCK_DGRAM
 #define AI_PROTOCOL IPPROTO_TCP
-
-/*
-    1. getaddrinfo to generate an addrinfo struct that we're going to use in creating our socket/connecting
-    it to the server
-    2. socket() creation
-    3. connect() to connect the socket to the addrinfo that we've created. connect() is also going to
-    assign an ephemeral port that the client is going to be binded to.
-
-    4. send() the contents of the file
-    5.
- */
-
 
 typedef struct addrinfo addrinfo;
 
@@ -70,16 +59,21 @@ int main(int argc, char* argv[]) {
             if (FD_ISSET(0, &master_modif) != 0) {
                 if (fgets(request, 1024, stdin) != NULL) {
                     char* split;
-                    memcpy(split, request, sizeof("connect"));
+                    if (memcpy(split, request, sizeof("connect")) == NULL) {
+                        printf("%s\n", "Could not process document connect...");
+                        continue;
+                    };
 
                     if (strcmp(split, "connect") == 0) {
-                        // connect function
+
                     }
 
-                    memcpy(split, request, sizeof("append"));
+                    if (memcpy(split, request, sizeof("append"))) {
+
+                    }
 
                     if ( strcmp(split, "append") == 0) {
-                        // append function
+                        append_docu();
                     }
                 }
             }
