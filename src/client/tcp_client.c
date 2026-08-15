@@ -3,20 +3,12 @@
 #include <string.h>
 #include <netdb.h>
 #include <sys/select.h>
-#include "../../include/client_doc_writer.h"
 
-#define VERIFY_RSLT_RTRN(){\
-    \
-}\
+#include <sys/errno.h>
 
-#define VERIFY_RSLT(){  \
-    \
-} \
+#include "../../include/client_doc_controller.h"
+#include "../../include/utils.h"
 
-
-#define AI_FAMILY AF_INET
-#define AI_SOCKTYPE SOCK_DGRAM
-#define AI_PROTOCOL IPPROTO_TCP
 
 typedef struct addrinfo addrinfo;
 
@@ -37,12 +29,13 @@ int main(int argc, char* argv[]) {
     hints.ai_protocol = IPPROTO_TCP;
 
     int res = getaddrinfo(remote_addr, port, &hints, &peer_addr);
-    VERIFY_RSLT_RTRN(res);
+    VERIFY_RSLT_RTRN(res, "getaddrinfo");
 
     int host_sock = socket(peer_addr->ai_family, peer_addr->ai_socktype, peer_addr->ai_protocol);
-    VERIFY_RSLT_RTRN(peer_socket);
+    VERIFY_RSLT_RTRN(peer_addr, "listen");
 
     res = connect(host_sock, peer_addr->ai_addr, peer_addr->ai_addrlen);
+    VERIFY_RSLT_RTRN(peer_addr, "connect");
 
     fd_set master; fd_set master_modif;
     FD_SET(&master, 0); //stdin
@@ -62,18 +55,16 @@ int main(int argc, char* argv[]) {
                     if (memcpy(split, request, sizeof("connect")) == NULL) {
                         printf("%s\n", "Could not process document connect...");
                         continue;
-                    };
+                    }
 
                     if (strcmp(split, "connect") == 0) {
 
                     }
 
                     if (memcpy(split, request, sizeof("append"))) {
-
-                    }
-
-                    if ( strcmp(split, "append") == 0) {
-                        append_docu();
+                        if (strcmp(split, "append") == 0) {
+                            append_docu();
+                        }
                     }
                 }
             }
