@@ -70,15 +70,15 @@ int main() {
     int peer_sock;
 
     addrinfo hints;
-    memset(hints, 0 ,sizeof(hints));
+    memset(&hints, 0 ,sizeof(hints));
 
     addrinfo *peer_addrinfo;
 
-    int res = getaddrinfo("8080", "0", &hints, &peer_addrinfo);
+    int res = getaddrinfo(NULL, "8080", &hints, &peer_addrinfo);
     VERIFY_RSLT_RTRN(res, "addrinfo struct generation");
 
-    res = socket(AI_FAMILY, AI_SOCKTYPE, AI_PROTOCOL);
-    VERIFY_RSLT_RTRN(res, "socket creation");
+    peer_sock = socket(AI_FAMILY, AI_SOCKTYPE, AI_PROTOCOL);
+    VERIFY_RSLT_RTRN(peer_sock, "socket creation");
 
     res = connect(peer_sock, peer_addrinfo->ai_addr, peer_addrinfo->ai_addrlen);
     VERIFY_RSLT_RTRN(res, "peering to server");

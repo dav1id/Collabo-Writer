@@ -15,14 +15,14 @@
 
 #define VERIFY_RSLT_RTRN(res, inst){ \
     if(res < 0){\
-        printf("%s failed| %d: %s", inst, errno, strerror(errno));\
+        printf("%s failed - %d: %s", inst, errno, strerror(errno));\
         return -1; \
     }\
 } \
 
 #define VERIFY_RSLT(res, inst){ \
     if(res < 0){\
-        printf("%s failed| %d: %s", inst, errno, strerror(errno));\
+        printf("%s failed - %d: %s", inst, errno, strerror(errno));\
     }\
 } \
 
