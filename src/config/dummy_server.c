@@ -16,19 +16,24 @@ int recv_file_contents(const char* dest, int sock) {
         return -1;
     }
 
-    int bytes_recv;
     char request[SEGMENT_LEN];
 
-    while ( (bytes_recv = recv(sock, request, SEGMENT_LEN, 0) != 0) ){ // ideally will incorporate metadata
-        printf("Received %d bytes from a remote client socket....\n", bytes_recv);
-        fprintf(fp, "%*.s\n", (int) strlen(request), request);
+    int bytes_recv = (int) recv(sock, request, SEGMENT_LEN, 0);
+
+    printf("Received %d bytes from a remote client socket....\n", bytes_recv);
+
+    printf("%d\n", (int) strlen(request));
+
+    //fprintf(fp, "%*.s\n", (int) strlen(request) - 1,  request )
+    if (fprintf(fp, request ) < 0) {
+        printf("Error code %d: %s\n", errno, strerror(errno));
     }
 
     return 0;
 }
 
 int main() {
-    const char *dest_path = "../../src/config/in.txt";
+    const char *dest_path = "../../src/config/config_files/out.txt";
 
     addrinfo *bind_addr;
     addrinfo hints;
@@ -39,7 +44,7 @@ int main() {
     hints.ai_protocol =  AI_PROTOCOL;
     hints.ai_flags = AI_PASSIVE;
 
-    int res = getaddrinfo(NULL, "8080", &hints, &bind_addr);
+    int res = getaddrinfo(NULL, "9096", &hints, &bind_addr);
     VERIFY_RSLT_RTRN(res, "getaddrinfo");
 
     int listen_sock = socket(AI_FAMILY, AI_SOCKTYPE, AI_PROTOCOL);
@@ -59,7 +64,7 @@ int main() {
 
     VERIFY_RSLT_RTRN(remote_sock, "accepting remote socket");
 
-    recv_file_contents(dest_path, listen_sock);
+    recv_file_contents(dest_path, remote_sock);
 
     return 1;
 }

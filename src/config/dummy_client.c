@@ -30,7 +30,7 @@ int send_file_contents(int sock, FILE* fp) {
         return -1;
     }
 
-    long pos_addr = 0;
+    long offset = 0;
 
     fseek(fp, 0, SEEK_END);
     long max_addr = ftell(fp);
@@ -40,9 +40,9 @@ int send_file_contents(int sock, FILE* fp) {
 
     char request[SEGMENT_LEN];
     int incr = 0;
-    while (pos_addr < max_addr) {
+    while (offset < max_addr) {
         fread(request, SEGMENT_LEN, sizeof(char), fp);
-        pos_addr += SEGMENT_LEN;
+        offset += SEGMENT_LEN;
 
         int bytes_sent = (int) send(sock, request, SEGMENT_LEN, 0);
         printf("Increment %d.... %d bytes sent... \n", incr++, bytes_sent);
@@ -54,30 +54,18 @@ int send_file_contents(int sock, FILE* fp) {
 typedef struct addrinfo addrinfo;
 
 int main() {
-    /*
-      getaddrinfo to generate struct addrinfos that best match our server and our hints. Can
-      loop through until we get one that is ideal/exact.
-
-      socket creation then connect the socket to the addrinfo. connect() assigns it an ephemeral
-      (temporary port assigned by the OS since we don't need to care about the assigned port)
-
-      call send_file_contents to send contents to the server
-     */
-
-    char* file_path = "../../src/config/in.txt"; // path relative to cmake
+    char* file_path = "../../src/config/config_files/in.txt"; // path relative to cmake
     FILE* fp = fopen(file_path, "rb");
-
-    int peer_sock;
 
     addrinfo hints;
     memset(&hints, 0 ,sizeof(hints));
 
     addrinfo *peer_addrinfo;
 
-    int res = getaddrinfo(NULL, "8080", &hints, &peer_addrinfo);
+    int res = getaddrinfo(NULL, "9096", &hints, &peer_addrinfo);
     VERIFY_RSLT_RTRN(res, "addrinfo struct generation");
 
-    peer_sock = socket(AI_FAMILY, AI_SOCKTYPE, AI_PROTOCOL);
+    int peer_sock = socket(AI_FAMILY, AI_SOCKTYPE, AI_PROTOCOL);
     VERIFY_RSLT_RTRN(peer_sock, "socket creation");
 
     res = connect(peer_sock, peer_addrinfo->ai_addr, peer_addrinfo->ai_addrlen);
