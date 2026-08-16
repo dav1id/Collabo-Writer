@@ -24,10 +24,10 @@
     6. ftell() - Returns the current file position
 */
 
-void* send_file_contents(int sock, FILE* fp) {
+int send_file_contents(int sock, FILE* fp) {
     if (fp == NULL) {
         printf("Error Number %d: %s\n", errno, strerror(errno));
-        return NULL;
+        return -1;
     }
 
     long pos_addr = 0;
