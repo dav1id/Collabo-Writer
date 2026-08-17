@@ -16,6 +16,8 @@ struct DocumentFork DocumentFork {
 
 struct docinfo {
     fd_set master_set; // Sockets that have been
+    int fd_incr = 0; // number of fds in the set
+    int fd_max;
 };
 
 
@@ -31,7 +33,6 @@ struct docinfo {
  **/
 void set_master_selector(int listen_sock);
 
-
 /**
     Create the fork that is going to handle all the recvfroms from the different remote sockets connected
     to it. Creates document_fork and Document structs for bookkeeping. Inside the fork() it's going
@@ -41,7 +42,6 @@ void set_master_selector(int listen_sock);
     The fork is created and the socket that created it is assigned to its fd_read_set.
     (insert_function_name) here tells it
 **/
-void init_fork_creation(const DocumentFork *doc_fork, DocumentFork *doc_fork_head, const int start_sock, const char* doc_name);
-
+void init_doc_fork(DocumentFork *document_fork, DocumentFork *doc_fork_head,  const char* doc_name);
 
 #endif //DOC_FORK_H
