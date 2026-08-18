@@ -9,7 +9,29 @@
 
 #include <sys/select.h>
 
-void init_doc_fork(DocumentFork *document_fork, DocumentFork *doc_fork_head, const char* doc_name) {
+void init_handshake(const int sock, const int stage) {
+    char* response;
+
+    switch (stage) {
+        case 1:
+            response = "Ready to receive user contents";
+            send(sock, response, strlen(response), 0);
+            break;
+        case 2:
+            response = "Finished receiving user contents";
+            send(sock, response, strlen(response), 0);
+            break;
+
+        default:
+            break;
+    }
+}
+
+void update_server_doc() {
+
+};
+
+void init_doc_fork(DocumentFork *document_fork, DocumentFork *doc_fork_head, const char* doc_name, int init_sock) {
     struct timeval timeout;
     timeout.tv_sec = TIMEOUT_SECS; timeout.tv_usec = TIMEOUT_USECS;
 

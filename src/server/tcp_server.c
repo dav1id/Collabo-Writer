@@ -14,7 +14,6 @@ typedef struct addrinfo addrinfo;
 typedef struct sockaddr sockaddr;
 typedef struct sockaddr_storage sockaddr_storage;
 
-
 /*
        Can make the parent process be the only one that deals with the shared memory, by
        making the child process send instructions to stdout, then the parent process pick up instructions
@@ -22,7 +21,7 @@ typedef struct sockaddr_storage sockaddr_storage;
 
        Or, we use the stdout approach and make the selector be the one that controls the document_fork
        selector
-    */
+*/
 void set_listen_func(int listen_sock, DocumentFork* doc_fork_head) {
     sockaddr_storage temp_sock_addr;
     socklen_t storage_socklen = sizeof(temp_sock_addr);
@@ -47,7 +46,6 @@ void set_listen_func(int listen_sock, DocumentFork* doc_fork_head) {
             if (strcmp(curr->doc_name, segment) == 0) {
                 docinfo *document = curr->document;
                 FD_SET(remote_sock, &document->master_set);
-
                 break;
             }
             curr = curr->next;
@@ -67,13 +65,15 @@ void set_listen_func(int listen_sock, DocumentFork* doc_fork_head) {
         document_fork->pid = pid;
         curr->next = document_fork;
 
-
-        if (pid > 0)
+        if (pid == 0) {
             /*
-                Pass in the same info, but here we're going to assume that the document_forks and the master selector are going to be handled by the parent process
+                Pass in the same info, but we're going to assume that the document_forks and the master selector are going to be
+                handled by the parent process with mmap()
              */
+            printf("%s %s\n", "Child Process has been created for document", document_fork->doc_name);
             init_doc_fork(document_fork, doc_fork_head, segment);
-
+            exit(0);
+        }
     }
 }
 

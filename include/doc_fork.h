@@ -3,6 +3,8 @@
 //
 #ifndef DOC_FORK_H
 #define DOC_FORK_H
+
+#include <unistd.h>
 typedef struct DocumentFork DocumentFork;
 typedef struct docinfo docinfo;
 
@@ -22,16 +24,14 @@ struct docinfo {
 
 
 /**
-    Controls the fd_set for the server. Server administers commands to document_fork, like
-    init_fork_creation
-
-    Connect() is going to connect the client to the document they want to begin to edit.
-    We'll loop through our DocumentForks linked list (by the doc name) and create a process if
-    a process to handle the document hasn't already been created. If it has, we'll have to add the
-    client that wants to connect to the fd_read_set of the process. If it hasn't then we'll have
-    to load the contents and then create the DocumentFork
+    Client sends a message to the server to connect. Server sends a message to the client letting it know
+    that it's ready to receive its segment information. Client sends metadata of the .txt file it's about to send
+    (Stage 2). Server lets the Client know that it's finished receiving the segments by returning the number of bytes
+    received (Stage 3)
+    @param sock Remote/client socket
+    @param stage Stage of server and client handshake
  **/
-void set_master_selector(int listen_sock);
+void init_handshake(const int sock, const int stage);
 
 /**
     Create the fork that is going to handle all the recvfroms from the different remote sockets connected
@@ -43,5 +43,19 @@ void set_master_selector(int listen_sock);
     (insert_function_name) here tells it
 **/
 void init_doc_fork(DocumentFork *document_fork, DocumentFork *doc_fork_head,  const char* doc_name);
+
+
+/**
+    Update the contents of the document. Creates the document if it doesn't exist, or deserialise the document if
+    its the first time calling update_doc. Uses init_handshake communicate with the client as it appends the contents
+    to the server text file
+**/
+void update_doc(const char* doc_name);
+
+/**
+ **/
+void deserialise_doc(const char* doc_name);
+
+void serialise_doc(const char* doc_name);
 
 #endif //DOC_FORK_H
