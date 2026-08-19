@@ -9,22 +9,9 @@
 
 #include <sys/select.h>
 
-void init_handshake(const int sock, const int stage) {
-    char* response;
-
-    switch (stage) {
-        case 1:
-            response = "Ready to receive user contents";
-            send(sock, response, strlen(response), 0);
-            break;
-        case 2:
-            response = "Finished receiving user contents";
-            send(sock, response, strlen(response), 0);
-            break;
-
-        default:
-            break;
-    }
+void server_response_connection(const int sock, const enum CONNEX_STAGE stage) {
+    int* int_stage = (int* ) &stage;
+    send(sock, &int_stage, sizeof(int), 0);
 }
 
 void update_server_doc() {

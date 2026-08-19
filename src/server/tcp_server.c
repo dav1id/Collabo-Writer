@@ -22,7 +22,7 @@ typedef struct sockaddr_storage sockaddr_storage;
        Or, we use the stdout approach and make the selector be the one that controls the document_fork
        selector
 */
-void set_listen_func(int listen_sock, DocumentFork* doc_fork_head) {
+void set_listen_func(const int listen_sock, DocumentFork* doc_fork_head) {
     sockaddr_storage temp_sock_addr;
     socklen_t storage_socklen = sizeof(temp_sock_addr);
 
@@ -43,9 +43,16 @@ void set_listen_func(int listen_sock, DocumentFork* doc_fork_head) {
         DocumentFork* curr = doc_fork_head;
 
         while (curr->next != NULL) {
+            /*
+                If the document has been found, then we know here that
+                we need to add the socket that's trying to connect to it to
+                the document's master selector
+             */
             if (strcmp(curr->doc_name, segment) == 0) {
                 docinfo *document = curr->document;
-                FD_SET(remote_sock, &document->master_set);
+                append_selector_fork(document);
+
+                server_response_connection(remote_sock, 1);
                 break;
             }
             curr = curr->next;
@@ -71,7 +78,10 @@ void set_listen_func(int listen_sock, DocumentFork* doc_fork_head) {
                 handled by the parent process with mmap()
              */
             printf("%s %s\n", "Child Process has been created for document", document_fork->doc_name);
+
+            server_response_connection(remote_sock, 1);
             init_doc_fork(document_fork, doc_fork_head, segment);
+
             exit(0);
         }
     }
@@ -98,7 +108,8 @@ int main(int argc, char* argv[]) {
     res = listen(listen_sock, 2);
     VERIFY_RSLT_RTRN(res, "listen");
 
-    set_master_selector(listen_sock);
+    DocumentFork doc_fork_head;
+    set_listen_func(listen_sock, &doc_fork_head);
 
     return 1;
 }

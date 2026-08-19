@@ -26,4 +26,10 @@
     }\
 } \
 
+enum CONNEX_STAGE {
+    CONNEX_SERVER_READY,
+    CONNEX_SERVER_INCOMPL,
+    APPEND_SERVER_COMPLETE
+};
+
 #endif //UTILS_H

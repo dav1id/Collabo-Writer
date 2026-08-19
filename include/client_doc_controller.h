@@ -15,6 +15,6 @@ void append_docu();
     Creates one if it doesn't. Sends a response back to the client indicating that it's established a
     connection
  **/
-void connect_docu();
+void connect_docu(int server_sock, const char* doc_name);
 
 #endif //CLIENT_DOC_WRITER_H

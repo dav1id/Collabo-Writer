@@ -9,7 +9,6 @@
 #include "../../include/client_doc_controller.h"
 #include "../../include/utils.h"
 
-
 typedef struct addrinfo addrinfo;
 
 int main(int argc, char* argv[]) {

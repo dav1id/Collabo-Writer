@@ -5,6 +5,8 @@
 #define DOC_FORK_H
 
 #include <unistd.h>
+#include "../../include/utils.h"
+
 typedef struct DocumentFork DocumentFork;
 typedef struct docinfo docinfo;
 
@@ -24,14 +26,12 @@ struct docinfo {
 
 
 /**
-    Client sends a message to the server to connect. Server sends a message to the client letting it know
-    that it's ready to receive its segment information. Client sends metadata of the .txt file it's about to send
-    (Stage 2). Server lets the Client know that it's finished receiving the segments by returning the number of bytes
-    received (Stage 3)
+    Server responds to the client twice using this function. One on a sucessful connection to the document fork,
+    and another when the client's text has been sucessfuly sent over the network.
     @param sock Remote/client socket
     @param stage Stage of server and client handshake
  **/
-void init_handshake(const int sock, const int stage);
+void server_response_connection(const int sock, enum CONNEX_STAGE stage);
 
 /**
     Create the fork that is going to handle all the recvfroms from the different remote sockets connected
@@ -46,6 +46,12 @@ void init_doc_fork(DocumentFork *document_fork, DocumentFork *doc_fork_head,  co
 
 
 /**
+    Append a socket to the document fork's selector. The document fork's selector is going to be in
+    shared memory.
+**/
+void append_selector_fork(docinfo *document_fork);
+
+/**
     Update the contents of the document. Creates the document if it doesn't exist, or deserialise the document if
     its the first time calling update_doc. Uses init_handshake communicate with the client as it appends the contents
     to the server text file
@@ -55,6 +61,7 @@ void update_doc(const char* doc_name);
 /**
  **/
 void deserialise_doc(const char* doc_name);
+
 
 void serialise_doc(const char* doc_name);
 
