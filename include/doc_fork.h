@@ -56,13 +56,12 @@ void append_selector_fork(docinfo *document_fork);
     its the first time calling update_doc. Uses init_handshake communicate with the client as it appends the contents
     to the server text file
 **/
-void update_doc(const char* doc_name);
+void server_write_self(const char* doc_name);
 
 /**
- **/
-void deserialise_doc(const char* doc_name);
+    Update the doc for every client.
+**/
+void server_write_clients(const char* doc_name, int sock_list[]);
 
-
-void serialise_doc(const char* doc_name);
 
 #endif //DOC_FORK_H

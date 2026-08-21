@@ -11,6 +11,7 @@
 
 typedef struct addrinfo addrinfo;
 
+
 int main(int argc, char* argv[]) {
     char* remote_addr = argv[1];
     char* port = argv[2];
@@ -19,6 +20,7 @@ int main(int argc, char* argv[]) {
         remote_addr = "0";
         port = "8080";
     }
+
 
     addrinfo *peer_addr; addrinfo hints;
     memset(hints, 0, sizeof(addrinfo));
@@ -43,9 +45,10 @@ int main(int argc, char* argv[]) {
     char request[1024];
 
     while (fgets(request, SEGMENT_LEN, stdin) != NULL) {
-        char* cmnd; char* doc_name;
-
+        char* cmnd;
         memcpy(cmnd, request, sizeof("connect"));
+
+        char* doc_name;
         if (strcmp(cmnd, "connect") == 0) {
             doc_name = &request[sizeof("connect")];
             connect_docu(host_sock, doc_name);

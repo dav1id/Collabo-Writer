@@ -11,40 +11,40 @@
 
 typedef enum CONNEX_STAGE CONNEX_STAGE;
 
-void connect_docu(int server_sock,  const char* doc_name) {
+void connect_docu(const int sock,  const char* doc_name) {
     char request[SEGMENT_LEN] = "connect ";
     int *stage;
 
     snprintf(request, SEGMENT_LEN, doc_name);
 
-    int res = send(server_sock, request, SEGMENT_LEN, 0);
+    int res = send(sock, request, SEGMENT_LEN, 0);
     VERIFY_RSLT(res, "Client sending request to connect to the server");
 
-    res = recv(server_sock, &stage, SEGMENT_LEN, 0);
+    res = recv(sock, &stage, SEGMENT_LEN, 0);
     VERIFY_RSLT(res, "Requesting server response on client connection...")
 
     if ((CONNEX_STAGE) *stage == CONNEX_SERVER_INCOMPL) {
-        printf("%s\n", "Connection to the server was not sucessful... Please try again");
+        printf("%s\n", "Connection to the server was not successful... Please try again");
     }
 }
 
-void client_write_server(int sock, const char* doc_name) {
+void client_write_server(const int sock, const char* doc_name) {
     char path_name[64] = "data/";
-    snprintf(path_name + strlen("data/"), sizeof(path_name) - strlen("data/"), "%s", doc_name);
+    snprintf(path_name + strlen("data/"), sizeof(path_name) - strlen("data/"), "%s", doc_name, ".txt");
 
     FILE *fp = fopen(path_name, "rb");
 
     int segment_incr = 0;
 
     fseek(fp, 0, SEEK_END);
-    int byte_length = (int) ftell(fp);
-    int num_segments = byte_length/SEGMENT_LEN + 1;
+    int max_offset = (int) ftell(fp);
+    int num_segments = max_offset/SEGMENT_LEN + 1;
 
     fseek(fp, 0, SEEK_SET);
 
     char response[SEGMENT_LEN];
+    response[0] = SEGMENT_LEN; // char's are already just integers - ascii characters
 
-    snprintf(response, sizeof(response), "%d", num_segments); // sending the number of segments to the server first
     send(sock, response, SEGMENT_LEN, 0);
 
     while (segment_incr < num_segments) {
@@ -55,7 +55,7 @@ void client_write_server(int sock, const char* doc_name) {
     }
 }
 
-void server_write_client(int sock, const char* doc_name) {
+void server_write_client(const int sock, const char* doc_name) {
     char path_name[64] = "data/";
     snprintf(path_name + strlen("data/"), sizeof(path_name) - strlen("data/"), "%s", doc_name);
 
