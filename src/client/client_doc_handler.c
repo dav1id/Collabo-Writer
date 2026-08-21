@@ -7,6 +7,7 @@
 
 #include <string.h>
 #include <sys/errno.h>
+#include <stdlib.h>
 
 typedef enum CONNEX_STAGE CONNEX_STAGE;
 
@@ -27,30 +28,48 @@ void connect_docu(int server_sock,  const char* doc_name) {
     }
 }
 
-void client_write_server(const char* doc_name, int remote_sock) {
+void client_write_server(int sock, const char* doc_name) {
     char path_name[64] = "data/";
     snprintf(path_name + strlen("data/"), sizeof(path_name) - strlen("data/"), "%s", doc_name);
 
-    FILE *fp = fopen(path_name, 'r');
+    FILE *fp = fopen(path_name, "rb");
 
-    int byte_length; int num_segments;
     int segment_incr = 0;
 
     fseek(fp, 0, SEEK_END);
-    byte_length = (int) ftell(fp);
+    int byte_length = (int) ftell(fp);
+    int num_segments = byte_length/SEGMENT_LEN + 1;
+
     fseek(fp, 0, SEEK_SET);
 
-    // send some metadata here, i.e. number of segments
-    send();
+    char response[SEGMENT_LEN];
+
+    snprintf(response, sizeof(response), "%d", num_segments); // sending the number of segments to the server first
+    send(sock, response, SEGMENT_LEN, 0);
 
     while (segment_incr < num_segments) {
+        fread(response, SEGMENT_LEN, SEGMENT_LEN, fp);
+        send(sock, response, sizeof(response), 0);
 
+        segment_incr++;
     }
 }
 
-void server_write_client(const char* doc_name, int remote_sock) {
+void server_write_client(int sock, const char* doc_name) {
     char path_name[64] = "data/";
     snprintf(path_name + strlen("data/"), sizeof(path_name) - strlen("data/"), "%s", doc_name);
 
-    FILE *fp = fopen(path_name, 'r');
+    FILE *fp = fopen(path_name, "wb");
+
+    char response[SEGMENT_LEN];
+    recv(sock, response, sizeof(response), 0);
+
+    int num_segments = atoi(response);
+    int segment_incr = 0;
+
+    while (segment_incr < num_segments) {
+        recv(sock, response, SEGMENT_LEN, 0);
+        fwrite(response, SEGMENT_LEN, SEGMENT_LEN, fp);
+        segment_incr++;
+    }
 }

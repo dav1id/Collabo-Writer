@@ -43,17 +43,18 @@ int main(int argc, char* argv[]) {
     char request[1024];
 
     while (fgets(request, SEGMENT_LEN, stdin) != NULL) {
-        char* cmnd;
+        char* cmnd; char* doc_name;
+
         memcpy(cmnd, request, sizeof("connect"));
-
         if (strcmp(cmnd, "connect") == 0) {
-
+            doc_name = &request[sizeof("connect")];
+            connect_docu(host_sock, doc_name);
         }
 
-        if (memcpy(split, request, sizeof("append"))) {
-            if (strcmp(split, "append") == 0) {
-                append_docu();
-            }
+        memcpy(split, request, sizeof("append"));
+        if (strcmp(split, "append") == 0) {
+            doc_name = &request[sizeof("append")];
+            client_write_server(host_sock, doc_name);
         }
     }
 }
