@@ -25,8 +25,15 @@ CONNEX_STAGE server_write_self(const int sock, const char* doc_name) {
     FILE* fp = fopen(path, "wb");
     fseek(fp, 0, SEEK_SET);
 
+    fseek(fp, 0, SEEK_END);
+    int max_offset = (int) ftell(fp);
+    fseek(fp, 0, SEEK_SET);
 
-    return UPDATE_SERVER_COMPLETE;
+    if (memcpy(max_offset, request, sizeof(int)))
+        return UPDATE_INCOMPL;
+
+    write_with_offset(max_offset, sock, request);
+    return UPDATE_COMPL;
 }
 
 CONNEX_STAGE fork_selector_controller(const int sock, char* request, const char* doc_name) {

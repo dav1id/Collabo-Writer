@@ -1,6 +1,8 @@
 //
 // Created by David Ola on 2026-08-14.
 //
+#pragma once
+#include <stdio.h>
 
 #ifndef UTILS_H
 #define UTILS_H
@@ -29,8 +31,12 @@
 enum CONNEX_STAGE {
     CONNEX_SERVER_READY,
     CONNEX_SERVER_INCOMPL,
-    UPDATE_SERVER_COMPLETE,
-    UPDATE_SERVER_INCOMPL
+    UPDATE_COMPL,
+    UPDATE_INCOMPL
 };
+
+
+void write_with_offset(int max_offset, int sock, FILE *fp);
+void recv_with_offset(int max_offset, int sock, FILE *fp);
 
 #endif //UTILS_H

@@ -34,28 +34,19 @@ void client_write_server(const int sock, const char* doc_name) {
 
     FILE *fp = fopen(path_name, "rb");
 
-    int segment_incr = 0;
-
     fseek(fp, 0, SEEK_END);
     int max_offset = (int) ftell(fp);
-    int num_segments = max_offset/SEGMENT_LEN + 1;
-
     fseek(fp, 0, SEEK_SET);
 
-    char response[SEGMENT_LEN];
-    response[0] = SEGMENT_LEN; // char's are already just integers - ascii characters
+    char request[SEGMENT_LEN];
+    request[0] = SEGMENT_LEN; // char's are already just integers - ascii characters
 
-    send(sock, response, SEGMENT_LEN, 0);
+    send(sock, request, SEGMENT_LEN, 0); // sending metadata first
 
-    while (segment_incr < num_segments) {
-        fread(response, SEGMENT_LEN, SEGMENT_LEN, fp);
-        send(sock, response, sizeof(response), 0);
-
-        segment_incr++;
-    }
+    write_with_offset(max_offset, sock, request);
 }
 
-void server_write_client(const int sock, const char* doc_name) {
+CONNEX_STAGE server_write_client(const int sock, const char* doc_name) {
     char path_name[64] = "data/";
     snprintf(path_name + strlen("data/"), sizeof(path_name) - strlen("data/"), "%s", doc_name);
 
@@ -64,12 +55,11 @@ void server_write_client(const int sock, const char* doc_name) {
     char response[SEGMENT_LEN];
     recv(sock, response, sizeof(response), 0);
 
-    int num_segments = atoi(response);
-    int segment_incr = 0;
+    int max_offset = 0;
 
-    while (segment_incr < num_segments) {
-        recv(sock, response, SEGMENT_LEN, 0);
-        fwrite(response, SEGMENT_LEN, SEGMENT_LEN, fp);
-        segment_incr++;
-    }
+    if (memcpy(max_offset, response, sizeof(int)) < 0)
+        return UPDATE_INCOMPL;
+
+    recv_with_offset(max_offset, sock, response);
+    return UPDATE_COMPL;
 }

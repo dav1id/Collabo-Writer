@@ -21,7 +21,7 @@ void client_write_server(const int sock, const char* doc_name);
     @param sock File descriptor for the server socket
     @param doc_name Name of the document being updated
 **/
-void server_write_client(const int sock, const char* doc_name);
+enum CONNEX_STAGE server_write_client(const int sock, const char* doc_name);
 
 /**
     Establishes a connection with the server, server deserializes the document if it exists.

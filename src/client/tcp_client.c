@@ -54,9 +54,9 @@ int main(int argc, char* argv[]) {
             connect_docu(host_sock, doc_name);
         }
 
-        memcpy(split, request, sizeof("append"));
+        memcpy(split, request, sizeof("update"));
         if (strcmp(split, "append") == 0) {
-            doc_name = &request[sizeof("append")];
+            doc_name = &request[sizeof("update")];
             client_write_server(host_sock, doc_name);
         }
     }
