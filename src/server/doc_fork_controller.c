@@ -10,8 +10,7 @@
 #include <sys/select.h>
 
 
-typedef enum CONNEX_STAGE CONNEX_STAGE;
-void server_response_connection(const int sock, const enum CONNEX_STAGE stage) {
+void server_response_connection(const int sock, const CONNEX_STAGE stage) {
     int* int_stage = (int* ) &stage;
     send(sock, &int_stage, sizeof(int), 0);
 }
@@ -29,10 +28,10 @@ CONNEX_STAGE server_write_self(const int sock, const char* doc_name) {
     int max_offset = (int) ftell(fp);
     fseek(fp, 0, SEEK_SET);
 
-    if (memcpy(max_offset, request, sizeof(int)))
+    if (memcpy(&max_offset, request, sizeof(int)))
         return UPDATE_INCOMPL;
 
-    write_with_offset(max_offset, sock, request);
+    write_with_offset(max_offset, sock, fp);
     return UPDATE_COMPL;
 }
 
@@ -63,13 +62,13 @@ CONNEX_STAGE fork_selector_controller(const int sock, char* request, const char*
         return CONNEX_SERVER_READY;
     }
 
-    response[SEGMENT_LEN] = "Unable to process user command...";
-    send(sock, response, sizeof(response), 0);
+    strcpy(response, "Unable to process user command...");
+    send(sock, response, strlen(response), 0);
 
     return -1;
 }
 
-void init_doc_fork(DocumentFork *document_fork, DocumentFork *doc_fork_head, const char* doc_name, int init_sock) {
+void init_doc_fork(DocumentFork *document_fork, DocumentFork *doc_fork_head, const char* doc_name) {
     struct timeval timeout;
     timeout.tv_sec = TIMEOUT_SECS; timeout.tv_usec = TIMEOUT_USECS;
 
@@ -86,7 +85,7 @@ void init_doc_fork(DocumentFork *document_fork, DocumentFork *doc_fork_head, con
         int socks_ready = select(fd_max + 1, &master, NULL, NULL, &timeout);
         if (socks_ready < 1) continue;
 
-        for (int sock = 0; sock < 0; ++sock) { // recv from the sock
+        for (int sock = 0; sock < fd_max; ++sock) { // recv from the sock
             fork_selector_controller(sock, request, doc_name);
         }
     }

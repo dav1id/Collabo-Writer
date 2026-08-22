@@ -28,13 +28,13 @@
     }\
 } \
 
-enum CONNEX_STAGE {
+
+typedef enum CONNEX_STAGE {
     CONNEX_SERVER_READY,
     CONNEX_SERVER_INCOMPL,
     UPDATE_COMPL,
     UPDATE_INCOMPL
-};
-
+} CONNEX_STAGE;
 
 void write_with_offset(int max_offset, int sock, FILE *fp);
 void recv_with_offset(int max_offset, int sock, FILE *fp);

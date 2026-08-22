@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include "utils.h"
 
-typedef struct {
+typedef struct DocumentFork{
     const char* doc_name;
     pid_t pid;
 
@@ -15,7 +15,7 @@ typedef struct {
     struct DocumentFork *next;
 } DocumentFork;
 
-typedef struct {
+typedef struct docinfo{
     fd_set master_set; // Sockets that have been
     int fd_incr; // number of fds in the set
     int fd_max;
@@ -45,19 +45,19 @@ void init_doc_fork(DocumentFork *document_fork, DocumentFork *doc_fork_head,  co
     Append a socket to the document fork's selector. The document fork's selector is going to be in
     shared memory.
 **/
-void append_selector_fork(docinfo *document_fork);
+void append_sock_to_fork(docinfo *document_fork);
 
 /**
     Update the contents of the document. Creates the document if it doesn't exist, or deserialise the document if
     its the first time calling update_doc. Uses init_handshake communicate with the client as it appends the contents
     to the server text file
 **/
-enum CONNEX_STAGE server_write_self(const char* doc_name);
+CONNEX_STAGE server_write_self(const int sock, const char* doc_name);
 
 /**
     Update the doc for every client.
 **/
-enum CONNEX_STAGE server_write_clients(const char* doc_name, int sock_list[]);
+CONNEX_STAGE server_write_clients(const char* doc_name, int sock_list[]);
 
 
 #endif //DOC_FORK_H

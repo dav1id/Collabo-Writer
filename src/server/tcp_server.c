@@ -51,9 +51,9 @@ void set_listen_func(const int listen_sock, DocumentFork* doc_fork_head, Documen
                  */
                 if (strcmp(curr->doc_name, segment) == 0) {
                     docinfo* document = curr->document;
-                    append_selector_fork(document);
+                    //append_sock_to_fork(document);
 
-                    server_response_connection(remote_sock, 1);
+                    server_response_connection(remote_sock, CONNEX_SERVER_READY);
                     break;
                 }
                 curr = curr->next;
@@ -90,15 +90,15 @@ void set_listen_func(const int listen_sock, DocumentFork* doc_fork_head, Documen
 }
 
 int main(int argc, char* argv[]) {
-    addrinfo *hints;
+    addrinfo hints;
     memset(&hints, 0, sizeof(addrinfo));
 
-    hints->ai_family = AI_FAMILY;
-    hints->ai_socktype = AI_SOCKTYPE;
-    hints->ai_flags = AI_PASSIVE;
+    hints.ai_family = AI_FAMILY;
+    hints.ai_socktype = AI_SOCKTYPE;
+    hints.ai_flags = AI_PASSIVE;
 
     addrinfo *bind_addr; // explanation of the double pointer for bind_addr
-    int res = getaddrinfo("8080", NULL, hints, &bind_addr);
+    int res = getaddrinfo("8080", NULL, &hints, &bind_addr);
     VERIFY_RSLT_RTRN(res, "getaddrinfo");
 
     const int listen_sock = socket(AI_FAMILY, AI_SOCKTYPE, bind_addr->ai_protocol);
