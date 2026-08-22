@@ -22,7 +22,7 @@ typedef struct sockaddr_storage sockaddr_storage;
        Or, we use the stdout approach and make the selector be the one that controls the document_fork
        selector
 */
-void set_listen_func(const int listen_sock, DocumentFork* doc_fork_head) {
+void set_listen_func(const int listen_sock, DocumentFork* doc_fork_head, DocumentFork* doc_fork_tail) {
     sockaddr_storage temp_sock_addr;
     socklen_t storage_socklen = sizeof(temp_sock_addr);
 
@@ -42,20 +42,22 @@ void set_listen_func(const int listen_sock, DocumentFork* doc_fork_head) {
 
         DocumentFork* curr = doc_fork_head;
 
-        while (curr->next != NULL) {
-            /*
-                If the document has been found, then we know here that
-                we need to add the socket that's trying to connect to it to
-                the document's master selector
-             */
-            if (strcmp(curr->doc_name, segment) == 0) {
-                docinfo *document = curr->document;
-                append_selector_fork(document);
+        if (curr !=  NULL) {
+            while (curr->next != NULL) {
+                /*
+                    If the document has been found, then we know here that
+                    we need to add the socket that's trying to connect to it to
+                    the document's master selector
+                 */
+                if (strcmp(curr->doc_name, segment) == 0) {
+                    docinfo* document = curr->document;
+                    append_selector_fork(document);
 
-                server_response_connection(remote_sock, 1);
-                break;
+                    server_response_connection(remote_sock, 1);
+                    break;
+                }
+                curr = curr->next;
             }
-            curr = curr->next;
         }
 
         //DocumentFork creation, and then init_fork_creation
@@ -70,7 +72,7 @@ void set_listen_func(const int listen_sock, DocumentFork* doc_fork_head) {
 
         pid_t pid = fork();
         document_fork->pid = pid;
-        curr->next = document_fork;
+        doc_fork_tail->next = document_fork;
 
         if (pid == 0) {
             /*
@@ -108,8 +110,9 @@ int main(int argc, char* argv[]) {
     res = listen(listen_sock, 2);
     VERIFY_RSLT_RTRN(res, "listen");
 
-    DocumentFork doc_fork_head;
-    set_listen_func(listen_sock, &doc_fork_head);
+    DocumentFork* doc_fork_head = NULL;
+    DocumentFork *doc_fork_tail = NULL;
+    set_listen_func(listen_sock, doc_fork_head, doc_fork_tail);
 
     return 1;
 }

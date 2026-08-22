@@ -5,25 +5,21 @@
 #define DOC_FORK_H
 
 #include <unistd.h>
-#include "../../include/utils.h"
+#include "utils.h"
 
-typedef struct DocumentFork DocumentFork;
-typedef struct docinfo docinfo;
-
-struct DocumentFork DocumentFork {
+typedef struct {
     const char* doc_name;
     pid_t pid;
 
-    docinfo *document;
-    DocumentFork *next;
-};
+    struct docinfo *document;
+    struct DocumentFork *next;
+} DocumentFork;
 
-struct docinfo {
+typedef struct {
     fd_set master_set; // Sockets that have been
-    int fd_incr = 0; // number of fds in the set
+    int fd_incr; // number of fds in the set
     int fd_max;
-};
-
+} docinfo;
 
 /**
     Server responds to the client twice using this function. One on a sucessful connection to the document fork,

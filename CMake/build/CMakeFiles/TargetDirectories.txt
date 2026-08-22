@@ -1,0 +1,4 @@
+/Users/davidola/Programming/Collabo-Writer/CMake/build/CMakeFiles/tcp-server.dir
+/Users/davidola/Programming/Collabo-Writer/CMake/build/CMakeFiles/tcp-client.dir
+/Users/davidola/Programming/Collabo-Writer/CMake/build/CMakeFiles/edit_cache.dir
+/Users/davidola/Programming/Collabo-Writer/CMake/build/CMakeFiles/rebuild_cache.dir
